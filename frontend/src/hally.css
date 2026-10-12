@@ -1,0 +1,48 @@
+/* Hally: the few styles of its own. Everything else is the app's (index.css, admin.css). */
+
+/* ---- the 0–10 pain scale ---- */
+.hally-scale{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:4px;margin:8px 0 6px}
+.hally-scale button{
+  appearance:none;border:0;border-radius:var(--r-sm);background:var(--surface-2);color:var(--label);
+  font:inherit;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;
+  min-height:40px;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent
+}
+.hally-scale button:active{background:var(--surface-3)}
+.hally-scale button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.hally-scale button.on{background:var(--green);color:#000}
+.hally-scale button.on.mid{background:var(--orange);color:#000}
+.hally-scale button.on.high{background:var(--red);color:#fff}
+.hally-rule{font-size:13px;line-height:1.4;color:var(--label-2);margin:8px 0 0}
+.hally-rule.tell{color:var(--orange);font-weight:600}
+.hally-step{text-align:start;margin-bottom:14px}
+.hally-step .field{margin-top:8px}
+
+/* ---- pain and note marks, in the trainer's lists and on the follow-up card ---- */
+.hally-pill{
+  display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;line-height:1;
+  padding:5px 8px;border-radius:999px;background:var(--surface-2);color:var(--label-2);white-space:nowrap
+}
+.hally-pill.ok{background:color-mix(in srgb,var(--green) 16%,transparent);color:var(--green)}
+.hally-pill.tell{background:color-mix(in srgb,var(--orange) 18%,transparent);color:var(--orange)}
+.hally-pill.high{background:color-mix(in srgb,var(--red) 16%,transparent);color:var(--red)}
+.hally-pill.acc{background:var(--acc-soft);color:var(--acc)}
+.hally-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+
+.hally-followup{border:var(--hair) solid var(--acc-line);margin-bottom:12px}
+.hally-followup .row{gap:8px;margin-top:10px}
+
+/* ---- trainer screens ---- */
+.hally-note{
+  background:var(--surface-2);border-radius:var(--r-sm);padding:9px 11px;margin-top:8px;
+  font-size:14px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere
+}
+.hally-note.unread{box-shadow:inset 3px 0 0 var(--acc)}
+.hally-note-l{display:block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--label-3);margin-bottom:3px}
+.hally-sets{font-size:13px;line-height:1.5;color:var(--label-2);font-variant-numeric:tabular-nums}
+.hally-ex{padding:8px 0;border-top:var(--hair) solid var(--sep)}
+.hally-ex:first-child{border-top:0}
+.hally-ex-n{font-size:15px;font-weight:600;text-transform:capitalize}
+.hally-code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:15px;font-weight:600;letter-spacing:.08em;
+  background:var(--surface-2);border:0;border-radius:var(--r-sm);padding:8px 10px;color:var(--label);cursor:pointer
+}
