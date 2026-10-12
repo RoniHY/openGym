@@ -16,6 +16,7 @@ import webpush from 'web-push';
 import * as coachConfig from './coach/config.js';
 import * as coachJobs from './coach/jobs.js';
 import { coachRoutes } from './coach/routes.js';
+import { trainerRoutes, linkInvited, inviteTrainer, forgetCoaching } from './trainer.js';   // Hally
 import { startCadence } from './coach/cadence.js';
 import { startWarmup } from './coach/warmup.js';
 import { dayReminderPush, nudgePush, restTimerPush, testPush } from './push-messages.js';
@@ -1326,6 +1327,7 @@ const passwordRoutes = {
     if (inv) { user.invitedBy = inv.code; inv.usedBy = user.id; inv.usedAt = created; }
     claimFirstAdmin(req, user);
     db.users.push(user);
+    linkInvited(db, inv, user);   // Hally: a trainer's code links the new profile to them
     saveDb();
     audit(req, 'auth.register.ok', { user, msg: inv ? inv.code + ' · password' : 'password' });
     json(res, 200, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(user) });
@@ -2025,6 +2027,7 @@ const routes = {
     if (invite) { user.invitedBy = invite.code; invite.usedBy = user.id; invite.usedAt = user.created; }
     claimFirstAdmin(req, user);
     db.users.push(user);
+    linkInvited(db, invite, user);   // Hally: a trainer's code links the new profile to them
     db.creds.push({
       id: credential.id, userId: user.id,
       publicKey: Buffer.from(credential.publicKey).toString('base64url'),
@@ -2488,6 +2491,7 @@ const routes = {
     // The training history and any Coach credential of theirs, both outside db.json.
     try { fs.unlinkSync(stateFile(u.id)); } catch { /* already gone */ }
     try { coachConfig.clearProfileAuth(u.id); } catch { /* nothing stored */ }
+    forgetCoaching(db, DATA, u.id);   // Hally: their trainer links and what a trainer kept
     // Their photos and videos — the one place a profile's folder under uploads/ is removed.
     try { MEDIA.removeUser(u.id); } catch (e) { console.error('media: could not remove uploads of', u.id, e.message); }
     saveDb();
@@ -2514,7 +2518,7 @@ const routes = {
     // code is good, so the code itself has to be the thing that isn't worth guessing. Codes already
     // in db.json keep working — validation is an exact string compare, never a length or format check.
     do { code = crypto.randomBytes(8).toString('hex').toUpperCase(); } while (db.invites.some(i => i.code === code));
-    const invite = { code, note: text(body.note).slice(0, 60), createdBy: admin.id, created: new Date().toISOString() };
+    const invite = { code, note: text(body.note).slice(0, 60), createdBy: admin.id, created: new Date().toISOString(), ...inviteTrainer(admin) };
     db.invites.push(invite);
     saveDb();
     audit(req, 'admin.invite.create', { user: admin, msg: code });
@@ -2574,6 +2578,9 @@ const routes = {
   // them: they are closures over db and SECRET, and passing them in keeps that module free of
   // a cycle. Every one of them is inert while the feature is unconfigured.
   ...coachRoutes({ json, readBody, readSession, requireAdmin }),
+
+  /* ---------- Hally: trainer and clients (trainer.js) ---------- */
+  ...trainerRoutes({ json, readBody, readSession, requireAdmin, getDb: () => db, saveDb, readState, records, livePresence, lastSyncOf, audit, dataDir: DATA, inviteOnly: INVITE_ONLY }),
 
   /* ---------- photos & videos ---------- */
   // Absent, not refusing, when MEDIA_UPLOADS=0: a 404 is what a server from before the feature
