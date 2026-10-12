@@ -52,6 +52,8 @@ for (const file of readdirSync(localesDir).filter(f => f.endsWith('.js'))) {
   const pack = (await import(pathToFileURL(join(localesDir, file)).href)).default
   for (const key of Object.keys(pack)) defined.add(key)
 }
+// Hally's own strings are defined in its Spanish pack (see check-locales.mjs).
+for (const key of Object.keys((await import(pathToFileURL(join(localesDir, 'hally', 'es.js')).href)).default)) defined.add(key)
 
 const missing = [...used.keys()].filter(k => !defined.has(k)).sort()
 

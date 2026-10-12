@@ -10,7 +10,7 @@
 // The reference is the union of all locales, not one blessed file: a key added to a
 // single locale then flags the other ten instead of passing unnoticed.
 
-import { readdirSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -76,9 +76,51 @@ for (const [lang, dict] of locales) {
   }
 }
 
+// Hally (this fork) keeps Spanish and English only. Its own strings live in src/locales/hally/,
+// one pack per language it translates, and are merged over the upstream pack at load time
+// (src/lib/hally-i18n.js). English is the key, as everywhere; every other language falls back to
+// English for them. So a Hally string is held to what a translation is held to (not blank, the
+// key's {n} placeholders) and to two rules of its own: Spanish must have it, being the
+// instance's default language, and it may not reuse an upstream key, which would shadow
+// upstream's translation in one language only. The upstream packs above are checked as before.
+const hallyDir = join(localesDir, 'hally')
+const hallyFiles = existsSync(hallyDir) ? readdirSync(hallyDir).filter(f => f.endsWith('.js')).sort() : []
+const hally = new Map()
+for (const file of hallyFiles) {
+  const { default: dict } = await import(pathToFileURL(join(hallyDir, file)).href)
+  if (!dict || typeof dict !== 'object') {
+    console.error(`hally/${file}: no default-exported object`)
+    process.exit(1)
+  }
+  hally.set(file.replace(/\.js$/, ''), dict)
+}
+if (hally.size) {
+  const hallyUnion = [...new Set([...hally.values()].flatMap(d => Object.keys(d)))]
+  if (!hally.has('es')) {
+    failed = true
+    console.error('\nhally/: no es.js. Spanish is the one language a Hally string must have.')
+  }
+  for (const [lang, dict] of hally) {
+    const missing = lang === 'es' ? hallyUnion.filter(k => !(k in dict)) : []
+    const shadows = Object.keys(dict).filter(k => seen.has(k))
+    const blank = Object.entries(dict).filter(([, v]) => typeof v !== 'string' || !v.trim()).map(([k]) => k)
+    const mangled = Object.entries(dict).filter(([k, v]) => typeof v === 'string' && marks(v) !== marks(k))
+    if (missing.length || shadows.length || blank.length || mangled.length) {
+      failed = true
+      console.error(`\nhally/${lang}.js: ${Object.keys(dict).length} keys`)
+      for (const k of missing) console.error(`  missing:   ${JSON.stringify(k)}`)
+      for (const k of shadows) console.error(`  upstream key: ${JSON.stringify(k)}`)
+      for (const k of blank) console.error(`  blank:     ${JSON.stringify(k)}`)
+      for (const [k, v] of mangled)
+        console.error(`  placeholders: ${JSON.stringify(k)} has [${marks(k) || '—'}], ${JSON.stringify(v)} has [${marks(v) || '—'}]`)
+    }
+  }
+}
+
 if (failed) {
   console.error('\nEvery locale must carry the same keys, each translated to something, with the source string\'s {n} placeholders.')
   process.exit(1)
 }
 
 console.log(`${locales.size} locales, ${union.length} keys each — in sync.`)
+if (hally.has('es')) console.log(`Hally: ${Object.keys(hally.get('es')).length} keys in es, English as the key; every other language falls back to English.`)
