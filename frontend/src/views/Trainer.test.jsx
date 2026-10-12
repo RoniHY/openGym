@@ -136,6 +136,24 @@ describe('My clients', () => {
     expect(mocks.toasts).toEqual(['Code copied: ABCD1234ABCD1234'])
   })
 
+  it('moves a code to "already used" when the client who used it shows up on the list', async () => {
+    vi.useFakeTimers()
+    try {
+      mocks.answers['/api/trainer/clients'] = { clients: [], now: 1 }
+      mocks.answers['/api/trainer/invites'] = { invites: [{ code: 'OPEN000000000000', note: 'Ana', usedBy: null }] }
+      act(() => root.render(<Trainer />))
+      await act(async () => { await vi.advanceTimersByTimeAsync(10) })
+      expect(host.textContent).toContain('Not used yet')
+      // The client signs up with the code; the list's own poll brings them in.
+      mocks.answers['/api/trainer/clients'] = clients()
+      mocks.answers['/api/trainer/invites'] = { invites: [{ code: 'OPEN000000000000', note: 'Ana', usedBy: 'ana', usedByName: 'Ana' }] }
+      await act(async () => { await vi.advanceTimersByTimeAsync(20050) })
+      expect(rows()).toHaveLength(2)
+      expect(host.textContent).not.toContain('Not used yet')
+      expect(host.textContent).toContain('OPEN000000000000→ Ana')
+    } finally { vi.useRealTimers() }
+  })
+
   it('shows who used a code, and asks before cancelling an unused one', async () => {
     mocks.answers['/api/trainer/invites'] = { invites: [
       { code: 'USED000000000000', note: '', usedBy: 'ana', usedByName: 'Ana' },
@@ -143,7 +161,7 @@ describe('My clients', () => {
     ] }
     await mount()
     expect(host.textContent).toContain('USED000000000000→ Ana')
-    act(() => host.querySelector('button[aria-label="Cancel code OPEN000000000000?"]').click())
+    act(() => host.querySelector('button[aria-label="Cancel code OPEN000000000000"]').click())
     expect(mocks.confirms).toHaveLength(1)
     expect(mocks.confirms[0].title).toBe('Cancel code OPEN000000000000?')
     mocks.answers['/api/trainer/invites/revoke'] = { ok: true }

@@ -15,7 +15,7 @@ import { buildStarterPlan, starterPlanDays, starterPlanOptions } from './lib/sta
 import Media, { Thumb } from './components/Media.jsx'
 import CustomMediaField from './components/CustomMediaField.jsx'
 import WorkoutMediaSection, { workoutMediaCount } from './components/WorkoutMedia.jsx'
-import HallyFinishStep from './components/HallyPain.jsx'
+import HallyFinishStep, { PainStep } from './components/HallyPain.jsx'
 import { hallyNote } from './store/useHally.js'
 import { mediaOf, normalizeMediaRef, cleanUrl, workoutMediaOf } from './lib/media-refs.js'
 import { syncMedia } from './lib/media-sync.js'
@@ -2536,6 +2536,7 @@ function WorkoutDetail({ w, close }) {
     }) : entryRows(groups[0]?.units || [])}
     {/* Progress photos and form-check videos: added and removed right here, on the saved record. */}
     <WorkoutMediaSection w={w} />
+    <PainStep w={w} />
     <div className="small muted" style={{ margin: '4px 0 6px' }}>{hallyNote().title}</div>
     <textarea ref={noteRef} className="input" rows={2} maxLength={NOTE_MAX} value={note}
       placeholder={hallyNote().placeholder}

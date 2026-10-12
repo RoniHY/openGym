@@ -124,6 +124,10 @@ describe('setWorseNextDay', () => {
     expect(s.workouts[0]._ts).toBe(5000)
     expect(setWorseNextDay(s, { id: 'w1' }, true, 9000)).toBe('saved')
     expect(s.workouts[0].pain.worseNextDay).toBe(true)
+    // In the key order every other write uses, so the same record never reads as two.
+    const noted = stateOf(workout('w1', '2026-10-10', { pain: { during: 4, area: 'rodilla', note: 'al bajar' } }))
+    setWorseNextDay(noted, { id: 'w1' }, true, 5000)
+    expect(JSON.stringify(noted.workouts[0].pain)).toBe(JSON.stringify(painOf({ during: 4, area: 'rodilla', worseNextDay: true, note: 'al bajar' })))
   })
 
   it('has nothing to answer on a session without pain', () => {

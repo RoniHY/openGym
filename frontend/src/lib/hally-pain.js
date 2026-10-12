@@ -120,7 +120,7 @@ export function setWorseNextDay(state, w, worse, now = Date.now()) {
   const pain = painOf(rec.pain)
   if (!pain || pain.during === 0) return 'invalid'
   if (pain.worseNextDay === !!worse) return 'same'
-  rec.pain = { ...pain, worseNextDay: !!worse }
+  rec.pain = painOf({ ...pain, worseNextDay: !!worse })
   stampWorkout(rec, now)
   return 'saved'
 }

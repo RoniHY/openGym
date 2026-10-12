@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
@@ -29,7 +29,7 @@ const POLL_MS = 20000
 export const unreadText = n => (n === 1 ? t('{0} unread note', n) : t('{0} unread notes', n))
 const clientsText = n => (n === 1 ? t('{0} client', n) : t('{0} clients', n))
 const weekSessionsText = n => (n === 1 ? t('{0} session this week', n) : t('{0} sessions this week', n))
-const painClientsText = n => (n === 1 ? t('{0} client with pain past 3/10', n) : t('{0} clients with pain past 3/10', n))
+const painClientsText = n => (n === 1 ? t('{0} client with pain to look at', n) : t('{0} clients with pain to look at', n))
 
 export function painText(pain) {
   if (!pain) return null
@@ -61,20 +61,14 @@ export function ClientRow({ c, onOpen }) {
 }
 
 // The trainer's invite codes: how a client gets in on an invite-only instance, and what links
-// their new profile to this trainer.
-function InvitesCard({ onUsed }) {
+// their new profile to this trainer. `reloadKey` changes when the list above does (a client who
+// just joined used one of these codes) and when the trainer asks for a refresh.
+function InvitesCard({ reloadKey }) {
   const toast = useUI(s => s.toast)
   const [invites, setInvites] = useState(null)
   const [note, setNote] = useState('')
   const load = () => fetchInvites().then(d => setInvites(Array.isArray(d?.invites) ? d.invites : [])).catch(() => {})
-  useEffect(() => { load() }, [])
-  // A code that has just been used is a new client on the list above.
-  const usedCount = useRef(0)
-  useEffect(() => {
-    const n = (invites || []).filter(i => i.usedBy).length
-    if (n > usedCount.current && usedCount.current > 0) onUsed?.()
-    usedCount.current = n
-  }, [invites])
+  useEffect(() => { load() }, [reloadKey])
 
   const copy = code => { navigator.clipboard?.writeText(code).catch(() => {}); toast(t('Code copied: {0}', code)) }
   const make = () => newInvite(note.trim())
@@ -92,17 +86,16 @@ function InvitesCard({ onUsed }) {
   return <div className="card">
     <h2 style={{ margin: 0 }}>{t('Invite a client')}</h2>
     <p className="small muted" style={{ margin: '4px 0 10px' }}>{t('Each code works once. Whoever creates their profile with it is linked to you, and from then on you see their sessions, notes and pain.')}</p>
-    <div className="row" style={{ gap: 8 }}>
-      <TextField value={note} maxLength={60} placeholder={t('Who is it for? (optional)')} aria-label={t('Who is it for? (optional)')}
-        onChange={e => setNote(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') make() }} style={{ flex: 1, minWidth: 0 }} />
-      <Button variant="primary" size="sm" icon="plus" onClick={make} style={{ flex: 'none', width: 'auto' }}>{t('New code')}</Button>
-    </div>
+    <TextField value={note} maxLength={60} placeholder={t('Who is it for? (optional)')} aria-label={t('Who is it for? (optional)')}
+      onChange={e => setNote(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') make() }} />
+    <div style={{ height: 8 }} />
+    <Button variant="primary" icon="plus" onClick={make}>{t('New code')}</Button>
     {open.length > 0 && <>
       <div className="small dim" style={{ margin: '14px 0 4px' }}>{t('Not used yet · tap to copy')}</div>
       {open.map(i => <div key={i.code} className="row between" style={{ padding: '6px 0', gap: 8 }}>
         <button type="button" className="hally-code" onClick={() => copy(i.code)} aria-label={t('Copy code {0}', i.code)}>{i.code}</button>
         <span className="small muted" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.note}</span>
-        <button type="button" className="iconbtn" style={{ color: 'var(--red)' }} onClick={() => revoke(i.code)} aria-label={t('Cancel code {0}?', i.code)}><Icon name="trash" /></button>
+        <button type="button" className="iconbtn" style={{ color: 'var(--red)' }} onClick={() => revoke(i.code)} aria-label={t('Cancel code {0}', i.code)}><Icon name="trash" /></button>
       </div>)}
     </>}
     {used.length > 0 && <>
@@ -121,6 +114,7 @@ export default function Trainer() {
   const loaded = useHally(s => s.loaded)
   const [answer, setAnswer] = useState(null)
   const [err, setErr] = useState(null)
+  const [asked, setAsked] = useState(0)        // the refresh button, for the cards that do not poll
 
   // A list that loaded stays up when a later poll fails, with a line saying so (as the admin's).
   const load = () => fetchClients()
@@ -143,7 +137,7 @@ export default function Trainer() {
 
   const clients = clientList(answer, todayISO())
   const totals = listTotals(clients)
-  const refresh = () => { load(); useHally.getState().refresh() }
+  const refresh = () => { load(); setAsked(n => n + 1); useHally.getState().refresh() }
 
   return <div className="narrow">
     <div className="hdr">
@@ -176,6 +170,6 @@ export default function Trainer() {
       {clients.map(c => <ClientRow key={c.id} c={c} onOpen={() => nav('/entrenador/c/' + encodeURIComponent(c.id))} />)}
     </div>}
 
-    <InvitesCard onUsed={load} />
+    <InvitesCard reloadKey={clients.map(c => c.id).join(',') + ':' + asked} />
   </div>
 }
