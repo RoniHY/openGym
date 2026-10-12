@@ -198,6 +198,7 @@ export function trainerRoutes({ json, readBody, readSession, requireAdmin, getDb
     const seen = readCoaching(client.id, link.trainerId).seen;
     const pained = [...workouts].reverse().find(w => painOf(w));
     const since = new Date(Date.now() - RECENT_DAYS * 86400000).toISOString().slice(0, 10);
+    const queueSince = record(S.queue) ? Number(S.queue.since) || 0 : 0;
     return {
       id: client.id, name: client.name, since: link.since || null, disabled: !!client.disabled,
       workouts: workouts.length,
@@ -211,7 +212,9 @@ export function trainerRoutes({ json, readBody, readSession, requireAdmin, getDb
         week: record(S.week) ? S.week : {},
         queue: record(S.queue) ? S.queue : null,
         routines: records(S.routines).map(r => ({ id: r.id, name: r.name })),
-        workouts: workouts.filter(w => str(w.d) >= since).map(w => ({
+        // Recent sessions, and every one since the running rotation pass began: its tally counts
+        // from `queue.since`, however long ago that was.
+        workouts: workouts.filter(w => str(w.d) >= since || (queueSince > 0 && (Number(w.start) || 0) >= queueSince)).map(w => ({
           id: w.id, d: w.d, start: w.start, end: w.end, name: w.name,
           ...(Array.isArray(w.routineIds) ? { routineIds: w.routineIds } : {}),
           ...(w.routineId != null ? { routineId: w.routineId } : {})

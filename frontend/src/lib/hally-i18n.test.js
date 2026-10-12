@@ -45,6 +45,7 @@ describe('the Spanish packs', () => {
 // string that reaches the screen in English on a Spanish instance is the bug this catches.
 describe('Hally source strings', () => {
   const CALL = /(^|[^A-Za-z0-9_$.])t\(\s*(['"])((?:\\.|(?!\2)[^\\])*)\2/g
+  const PLURAL = /(^|[^A-Za-z0-9_$.])tn\(\s*'((?:\\.|[^'\\])*)'\s*,\s*(')((?:\\.|[^'\\])*)'/g
   const files = []
   const walk = dir => {
     for (const name of readdirSync(dir)) {
@@ -61,6 +62,11 @@ describe('Hally source strings', () => {
       for (const m of readFileSync(file, 'utf8').matchAll(CALL)) {
         const key = m[3].replace(/\\(['"\\])/g, '$1')
         if (key && !(key in hallyEs) && !(key in es)) missing.push(key)
+      }
+      // tn('{0} note', '{0} notes', n): a pack without plural forms answers through t() with
+      // whichever of the two fits, so both have to be there.
+      for (const m of readFileSync(file, 'utf8').matchAll(PLURAL)) {
+        for (const key of [m[2], m[4]]) if (!(key in hallyEs) && !(key in es)) missing.push(key)
       }
     }
     expect([...new Set(missing)]).toEqual([])
