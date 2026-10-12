@@ -16,6 +16,7 @@ import Media, { Thumb } from './components/Media.jsx'
 import CustomMediaField from './components/CustomMediaField.jsx'
 import WorkoutMediaSection, { workoutMediaCount } from './components/WorkoutMedia.jsx'
 import HallyFinishStep from './components/HallyPain.jsx'
+import { hallyNote } from './store/useHally.js'
 import { mediaOf, normalizeMediaRef, cleanUrl, workoutMediaOf } from './lib/media-refs.js'
 import { syncMedia } from './lib/media-sync.js'
 import LineChart from './components/LineChart.jsx'
@@ -2535,9 +2536,9 @@ function WorkoutDetail({ w, close }) {
     }) : entryRows(groups[0]?.units || [])}
     {/* Progress photos and form-check videos: added and removed right here, on the saved record. */}
     <WorkoutMediaSection w={w} />
-    <div className="small muted" style={{ margin: '4px 0 6px' }}>{t('Session note')}</div>
+    <div className="small muted" style={{ margin: '4px 0 6px' }}>{hallyNote().title}</div>
     <textarea ref={noteRef} className="input" rows={2} maxLength={NOTE_MAX} value={note}
-      placeholder={t('How the session went as a whole.')}
+      placeholder={hallyNote().placeholder}
       onFocus={onNoteFocus} onChange={e => setNote(e.target.value)} onBlur={saveNote} />
     <div style={{ height: 14 }} />
     {st.active && <p className="small muted">{t('Finish the current workout first.')}</p>}
@@ -3099,9 +3100,9 @@ function SessionNote({ close }) {
   }
 
   return <>
-    <h3>{t('Session note')}</h3>
+    <h3>{hallyNote().title}</h3>
     <textarea ref={noteRef} className="input" rows={4} maxLength={NOTE_MAX} value={note}
-      placeholder={t('How the session went as a whole.')}
+      placeholder={hallyNote().placeholder}
       onFocus={onNoteFocus} onChange={e => setNote(e.target.value)} />
     <div style={{ height: 18 }} />
     <Button variant="primary" onClick={save}>{t('Save')}</Button>

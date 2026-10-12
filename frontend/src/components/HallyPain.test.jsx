@@ -30,7 +30,7 @@ vi.mock('../lib/format.js', async orig => ({ ...(await orig()), todayISO: () => 
 import { useStore } from '../store/useStore.js'
 import { useHally } from '../store/useHally.js'
 import { NOBODY } from '../lib/hally-coaching.js'
-import HallyFinishStep, { PainFollowUp } from './HallyPain.jsx'
+import HallyFinishStep, { PainFollowUp, NoteStep } from './HallyPain.jsx'
 
 const workout = (id, d, extra = {}) => ({ id, d, start: 1, end: 2, name: 'Pierna', entries: [{ id: '0025', sets: [{ done: true, w: 60, r: 8 }] }], ...extra })
 const saved = id => useStore.getState().S.workouts.find(w => w.id === id)
@@ -179,5 +179,57 @@ describe('the next-day question on the workout screen', () => {
     expect(host.textContent).toContain('tell your trainer before you load the same today')
     tap(button('Got it'))
     expect(host.textContent).toBe('')
+  })
+})
+
+describe('the note for the trainer on the finish screen', () => {
+  const pedro = { trainer: false, clients: 0, coach: { id: 'p', name: 'Pedro', since: null } }
+
+  it('is not there for a profile without a trainer', () => {
+    mount(<NoteStep w={{ id: 'w1' }} />)
+    expect(host.textContent).toBe('')
+    mount(<HallyFinishStep w={{ id: 'w1' }} />)
+    expect(host.querySelector('textarea')).toBe(null)
+    expect(host.textContent).not.toContain('Note for your trainer')
+  })
+
+  it('is named for the trainer and says who reads it', () => {
+    useHally.setState({ me: pedro })
+    mount(<HallyFinishStep w={{ id: 'w1' }} />)
+    expect(host.textContent).toContain('Note for your trainer')
+    expect(host.textContent).toContain('Pedro reads this when they review your session.')
+    expect(host.querySelector('textarea').getAttribute('placeholder')).toBe('How it went, what felt hard, anything your trainer should know.')
+  })
+
+  it('saves the note onto the workout when the field is left, once', () => {
+    useHally.setState({ me: pedro })
+    mount(<NoteStep w={{ id: 'w1' }} />)
+    const field = host.querySelector('textarea')
+    type(field, 'Me costó la última serie de sentadilla'); blur(field)
+    expect(saved('w1').note).toBe('Me costó la última serie de sentadilla')
+    const before = mocks.updates
+    blur(field)
+    expect(mocks.updates).toBe(before)
+  })
+
+  it('opens on the note written during the workout, and saves what is typed if the screen closes first', () => {
+    useHally.setState({ me: pedro })
+    useStore.setState({ S: { workouts: [workout('w1', '2026-10-12', { note: 'Calenté poco' })] } })
+    mount(<NoteStep w={{ id: 'w1' }} />)
+    const field = host.querySelector('textarea')
+    expect(field.value).toBe('Calenté poco')
+    type(field, 'Calenté poco y se notó')
+    act(() => root.unmount())
+    root = createRoot(host)
+    expect(saved('w1').note).toBe('Calenté poco y se notó')
+  })
+
+  it('leaves the note alone when nothing was typed', () => {
+    useHally.setState({ me: pedro })
+    useStore.setState({ S: { workouts: [workout('w1', '2026-10-12', { note: 'Calenté poco' })] } })
+    mount(<NoteStep w={{ id: 'w1' }} />)
+    act(() => root.unmount())
+    root = createRoot(host)
+    expect(mocks.updates).toBe(0)
   })
 })

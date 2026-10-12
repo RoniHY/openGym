@@ -6,6 +6,7 @@
 import { create } from 'zustand'
 import { useStore } from './useStore.js'
 import { NOBODY, fetchMe, readCachedMe, writeCachedMe } from '../lib/hally-coaching.js'
+import { noteWords } from '../lib/hally-note.js'
 
 export const useHally = create((set, get) => ({
   me: NOBODY,
@@ -27,6 +28,12 @@ export const useHally = create((set, get) => ({
     } catch { return get().me }
   },
 }))
+
+/**
+ * The words for the session note as the profile signed in should read them (lib/hally-note.js).
+ * Read where it is drawn, not subscribed to: the answer is in long before a session is finished.
+ */
+export const hallyNote = () => noteWords(useHally.getState().me)
 
 // Signing in, signing out, switching profile. Guarded because tests replace useStore with a
 // plain function that has no subscribe.

@@ -18,6 +18,13 @@ export default {
   'Join': 'Ligarme',
   'You now train with {0}': 'Ahora entrenas con {0}',
 
+  // Nota para el entrenador
+  'Note for your trainer': 'Nota para tu entrenador',
+  'How it went, what felt hard, anything your trainer should know.': 'Cómo te fue, qué te costó, lo que tu entrenador deba saber.',
+  'Leave a note for your trainer': 'Dejar nota para tu entrenador',
+  'Edit the note for your trainer': 'Editar la nota para tu entrenador',
+  '{0} reads this when they review your session.': '{0} lee esto cuando revisa tu sesión.',
+
   // Dolor por sesión
   'Did anything hurt?': '¿Te dolió algo?',
   'Pain during the session, from 0 to 10': 'Dolor durante la sesión, de 0 a 10',

@@ -7,6 +7,8 @@ import {
   PAIN_MAX, PAIN_OK_MAX, PAIN_AREA_MAX, PAIN_NOTE_MAX,
   workoutPain, setWorkoutPain, painChanges, setWorseNextDay, painFollowUp,
 } from '../lib/hally-pain.js'
+import { noteWords, noteChanges, setWorkoutNote } from '../lib/hally-note.js'
+import { NOTE_MAX } from '../lib/history.js'
 import { sameWorkout } from '../lib/workout-date.js'
 import { fmtDate, todayISO } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
@@ -123,7 +125,33 @@ export function PainFollowUp() {
   </div>
 }
 
-/** What views/sheets.jsx mounts on the finish screen. One component, so it is one line there. */
+/**
+ * The note for the trainer, once more on the finish screen: the session is over, which is when
+ * there is something to say. It is the session note (it may already hold what was typed during
+ * the workout). Only for a client with a trainer; anyone else keeps upstream's note as it is.
+ */
+export function NoteStep({ w }) {
+  const rec = useStore(s => (Array.isArray(s.S.workouts) ? s.S.workouts.find(x => x && sameWorkout(x, w)) : null))
+  const me = useHally(s => s.me)
+  const words = noteWords(me)
+  const [note, setNote] = useState(typeof rec?.note === 'string' ? rec.note : '')
+  const live = useRef(note)
+  live.current = note
+  const write = text => { if (noteChanges(useStore.getState().S, w, text)) useStore.getState().update(s => { setWorkoutNote(s, w, text) }) }
+  useEffect(() => () => write(live.current), [])
+  if (!rec || !words.forTrainer) return null
+  return <div className="hally-step">
+    <h4 className="sec">{words.title}</h4>
+    <TextArea rows={3} value={note} maxLength={NOTE_MAX} placeholder={words.placeholder} aria-label={words.title}
+      onChange={e => setNote(e.target.value)} onBlur={() => write(note)} />
+    <div className="small dim" style={{ marginTop: 6 }}>{t('{0} reads this when they review your session.', me.coach.name)}</div>
+  </div>
+}
+
+/** What sheets.jsx mounts on the finish screen. One component, so it is one line there. */
 export default function HallyFinishStep({ w }) {
-  return <PainStep w={w} />
+  return <>
+    <PainStep w={w} />
+    <NoteStep w={w} />
+  </>
 }
