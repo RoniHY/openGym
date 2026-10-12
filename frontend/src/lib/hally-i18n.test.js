@@ -63,10 +63,12 @@ describe('Hally source strings', () => {
         const key = m[3].replace(/\\(['"\\])/g, '$1')
         if (key && !(key in hallyEs) && !(key in es)) missing.push(key)
       }
-      // tn('{0} note', '{0} notes', n): a pack without plural forms answers through t() with
-      // whichever of the two fits, so both have to be there.
+      // tn('{0} note', '{0} notes', n) is for keys upstream already carries: its plural test
+      // (lib/i18n-plural.test.js) wants one/few/many forms in Russian, Ukrainian and Polish for
+      // every tn() key in the source, and a Hally string has Spanish and English only. A count
+      // in Hally's own words is two literal t() calls (views/Trainer.jsx unreadText).
       for (const m of readFileSync(file, 'utf8').matchAll(PLURAL)) {
-        for (const key of [m[2], m[4]]) if (!(key in hallyEs) && !(key in es)) missing.push(key)
+        for (const key of [m[2], m[4]]) if (!(key in es)) missing.push('tn(): ' + key)
       }
     }
     expect([...new Set(missing)]).toEqual([])

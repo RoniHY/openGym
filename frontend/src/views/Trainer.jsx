@@ -6,7 +6,7 @@ import { useHally } from '../store/useHally.js'
 import { fetchClients, fetchInvites, newInvite, revokeInvite } from '../lib/hally-coaching.js'
 import { clientList, listTotals } from '../lib/hally-trainer.js'
 import { fmtDaysAgo, todayISO } from '../lib/format.js'
-import { t, tn } from '../lib/i18n.js'
+import { t } from '../lib/i18n.js'
 import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, TextField } from '../components/ui.jsx'
@@ -23,6 +23,14 @@ import '../hally.css'
 // changes by the minute.
 const POLL_MS = 20000
 
+// Counts in Hally's own words. Not tn(): upstream holds every tn() key to one/few/many forms in
+// Russian, Ukrainian and Polish (lib/i18n-plural.test.js), and Hally's strings are Spanish and
+// English only. Two literal t() calls say the same in the two languages it has.
+export const unreadText = n => (n === 1 ? t('{0} unread note', n) : t('{0} unread notes', n))
+const clientsText = n => (n === 1 ? t('{0} client', n) : t('{0} clients', n))
+const weekSessionsText = n => (n === 1 ? t('{0} session this week', n) : t('{0} sessions this week', n))
+const painClientsText = n => (n === 1 ? t('{0} client with pain past 3/10', n) : t('{0} clients with pain past 3/10', n))
+
 export function painText(pain) {
   if (!pain) return null
   if (pain.during === 0) return t('No pain')
@@ -31,7 +39,7 @@ export function painText(pain) {
 const painTone = pain => (pain.verdict === 'tell' ? (pain.during > 6 ? ' high' : ' tell') : pain.verdict === 'ok' ? ' ok' : '')
 
 export function ClientRow({ c, onOpen }) {
-  const week = c.week.planned > 0 ? t('Week {0}/{1}', c.week.done, c.week.planned) : tn('{0} session this week', '{0} sessions this week', c.week.done)
+  const week = c.week.planned > 0 ? t('Week {0}/{1}', c.week.done, c.week.planned) : weekSessionsText(c.week.done)
   return <div className="item" role={onOpen ? 'button' : undefined} tabIndex={onOpen ? 0 : undefined}
     onClick={onOpen} onKeyDown={onOpen ? e => { if (e.key === 'Enter') onOpen() } : undefined} style={c.disabled ? { opacity: .55 } : null}>
     <div className="grow">
@@ -45,7 +53,7 @@ export function ClientRow({ c, onOpen }) {
         <span className={'hally-pill' + (c.week.planned > 0 && c.week.done >= c.week.planned ? ' ok' : '')}>{week}</span>
         {c.pain && <span className={'hally-pill' + painTone(c.pain)}>{painText(c.pain)}{c.pain.d ? ' · ' + fmtDaysAgo(c.pain.d) : ''}
           {c.pain.worseNextDay === true ? ' · ' + t('worse the next day') : ''}</span>}
-        {c.unread > 0 && <span className="hally-pill acc"><Icon name="note" />{tn('{0} unread note', '{0} unread notes', c.unread)}</span>}
+        {c.unread > 0 && <span className="hally-pill acc"><Icon name="note" />{unreadText(c.unread)}</span>}
       </div>
     </div>
     {onOpen && <Icon name="chevronRight" className="chev" />}
@@ -143,7 +151,7 @@ export default function Trainer() {
       <div style={{ flex: 1, marginInlineStart: 8 }}>
         <h1 style={{ margin: 0 }}>{t('My clients')}</h1>
         <div className="sub">{!answer ? (err ? t('Could not load') : t('Loading…'))
-          : tn('{0} client', '{0} clients', totals.clients) + (totals.live ? ' · ' + tn('{0} training now', '{0} training now', totals.live) : '')}</div>
+          : clientsText(totals.clients) + (totals.live ? ' · ' + t('{0} training now', totals.live) : '')}</div>
       </div>
       <button className="iconbtn" onClick={refresh} aria-label={t('Refresh the list')}><Icon name="reset" /></button>
     </div>
@@ -155,8 +163,8 @@ export default function Trainer() {
     </div>}
 
     {answer && (totals.unread > 0 || totals.pain > 0) && <div className="hally-pills" style={{ margin: '0 0 12px' }}>
-      {totals.unread > 0 && <span className="hally-pill acc"><Icon name="note" />{tn('{0} unread note', '{0} unread notes', totals.unread)}</span>}
-      {totals.pain > 0 && <span className="hally-pill tell">{tn('{0} client with pain past 3/10', '{0} clients with pain past 3/10', totals.pain)}</span>}
+      {totals.unread > 0 && <span className="hally-pill acc"><Icon name="note" />{unreadText(totals.unread)}</span>}
+      {totals.pain > 0 && <span className="hally-pill tell">{painClientsText(totals.pain)}</span>}
     </div>}
 
     {answer && !clients.length && <div className="card">

@@ -35,9 +35,10 @@ export const useHally = create((set, get) => ({
  */
 export const hallyNote = () => noteWords(useHally.getState().me)
 
-// Signing in, signing out, switching profile. Guarded because tests replace useStore with a
-// plain function that has no subscribe.
-if (typeof useStore.subscribe === 'function') {
+// Signing in, signing out, switching profile. Not under test: upstream's store tests sign
+// profiles in and out against a fake server, and this would add a request of Hally's to each of
+// them (and tests that replace useStore with a plain function have no subscribe at all).
+if (import.meta.env?.MODE !== 'test' && typeof useStore.subscribe === 'function') {
   let last = useStore.getState().user?.id || null
   useStore.subscribe(state => {
     const now = state.user?.id || null

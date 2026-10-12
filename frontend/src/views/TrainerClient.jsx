@@ -12,7 +12,7 @@ import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import LineChart from '../components/LineChart.jsx'
 import { Button, Segmented } from '../components/ui.jsx'
-import { painText } from './Trainer.jsx'
+import { painText, unreadText } from './Trainer.jsx'
 import '../hally.css'
 
 // Hally: one client, read-only (/entrenador/c/:id).
@@ -156,7 +156,7 @@ export default function TrainerClient() {
 
     {v.unread.length > 0 && <div className="card" style={{ borderColor: 'var(--acc)', marginBottom: 12 }}>
       <div className="row between" style={{ gap: 8 }}>
-        <div style={{ fontWeight: 600 }}>{tn('{0} unread note', '{0} unread notes', v.unread.length)}</div>
+        <div style={{ fontWeight: 600 }}>{unreadText(v.unread.length)}</div>
         <Button size="sm" icon="check" onClick={() => read()} style={{ flex: 'none', width: 'auto' }}>{t('Mark all as read')}</Button>
       </div>
     </div>}
